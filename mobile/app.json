@@ -39,7 +39,7 @@
       ]
     ],
     "extra": {
-      "apiUrl": "http://localhost:8000"
+      "apiUrl": "https://emotionsense-api-w5uh.onrender.com"
     }
   }
 }
