@@ -142,10 +142,11 @@ finding new lows, most recently at epoch 58) — `ReduceLROnPlateau` stepping th
 down four times (5e-4 → ~7.8e-6) is doing a lot of the later-epoch improvement. A longer run or a
 lower floor on the LR schedule would be the first thing to try for more accuracy.
 
-**Measured backend latency** (`backend/main.py`'s `/predict`, CNN backend, warm process): median
-~110ms per request once the first inference has run. The very first request after startup pays a
-~5s one-time TensorFlow graph-tracing cost — worth a warm-up request in any deployment that cares
-about first-request latency (e.g. hit `/health` once right after boot before routing real traffic).
+**Measured backend latency**: the backend now serves from the TFLite model (see "Model serving"
+below) rather than the full Keras model — measured locally, ~30ms per request steady-state, model
+load at startup ~6.4s. (An earlier version served the full Keras model directly: ~110ms/request,
+but ~57s startup and a memory footprint that OOM-crashed on Render's 512MB free tier the moment a
+real request ran — see below for why that changed.)
 
 ### Where the models get confused
 
@@ -215,11 +216,20 @@ or open `website/index.html` directly, or `cd mobile && npm install && npx expo 
 - **Backend**: `backend/Dockerfile` + root-level `render.yaml` deploy to Render as a Docker web
   service (Railway works the same way pointed at the same Dockerfile). `/health` is wired up as
   the platform health-check path. Full step-by-step in [docs/DEPLOYMENT.md](DEPLOYMENT.md).
-- **Model size**: `ml/quantize_model.py` exports a dynamic-range-quantized TFLite version of the
-  CNN for free-tier hosts with limited RAM. Measured on this run: **1.40MB → 0.12MB (11.2x
-  smaller)** for a **66.7% → 63.4%** test-accuracy trade-off (`docs/results/quantization_results.json`).
-  Worth it if you're memory-constrained; the full Keras model is small enough (under 2MB) that
-  most hosts don't need it.
+- **Model size / serving runtime — this bit isn't optional on free tier.** `ml/quantize_model.py`
+  exports a dynamic-range-quantized TFLite version of the CNN (**1.40MB → 0.12MB, 11.2x smaller**,
+  **66.7% → 63.4%** test-accuracy trade-off — `docs/results/quantization_results.json`). The
+  smaller *file* isn't the point that matters most, though: `backend/main.py` was originally built
+  to `import tensorflow` and load `cnn_model.keras` directly, and that broke a real deployment —
+  full `tensorflow-cpu` is a ~1.5GB installed package, and importing it plus running one real
+  inference request pushed the process over Render's 512MB free-tier RAM cap, which OOM-crashed
+  the container (visible as `/health` working fine, then a platform 502 the moment `/predict` ran
+  for real). The fix, now in `ml/predict.py`: serve from `cnn_model.tflite` via `ai_edge_litert`
+  (a standalone ~47MB interpreter-only package, no TensorFlow import at all) instead of the full
+  Keras model — see `backend/requirements.txt`. Verified in a clean venv with `tensorflow` not
+  even installed: ~6.4s model load (vs. ~57s), ~30ms/request steady-state (vs. ~110ms), flat
+  memory across repeated requests. `train_deep.py`/`evaluate.py` still use full `tensorflow-cpu`
+  for training — this swap is serving-only.
 - **Model artifacts**: `ml/models/` (~12MB total) is committed to the repo, so `backend/` runs
   immediately after `pip install` with no retraining step. If the models grow past what you want
   in git (e.g. after retraining on a larger dataset), switch to pulling them from a release,

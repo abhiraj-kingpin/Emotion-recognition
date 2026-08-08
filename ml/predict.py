@@ -5,6 +5,16 @@ sanity-testing script (Part 5's "sanity test on your own recorded clips").
 
 Prefers the CNN (best accuracy) when available, falls back to Random Forest,
 so the backend / CLI keep working even if only the baseline was trained.
+
+CNN loading prefers the TFLite artifact over the full Keras model, in this
+order: `ai_edge_litert` (a standalone ~47MB interpreter-only package) ->
+`tensorflow`'s bundled `tf.lite.Interpreter` -> the full Keras model as a
+last resort. This matters in practice, not just in theory: `import
+tensorflow` pulls in a ~1.5GB package and comfortably OOMs a 512MB free-tier
+host (Render, Railway) the moment a real request runs inference, even though
+the lightweight `/health` endpoint looks fine right up until then. The
+TFLite path avoids importing full TensorFlow at all when `ai_edge_litert` is
+installed - see backend/requirements.txt.
 """
 import json
 import os
@@ -29,7 +39,8 @@ class EmotionPredictor:
         self.feature_columns = None
         self.rf = None
         self.svm = None
-        self.cnn = None
+        self.cnn = None          # set when using the full Keras model
+        self.cnn_lite = None     # set when using a TFLite interpreter instead
         self.backend = None
         self._load(prefer)
 
@@ -48,24 +59,47 @@ class EmotionPredictor:
             if os.path.exists(svm_path):
                 self.svm = joblib.load(svm_path)
 
-        cnn_path = os.path.join(MODEL_DIR, "cnn_model.keras")
-        if os.path.exists(cnn_path):
-            import tensorflow as tf
-            self.cnn = tf.keras.models.load_model(cnn_path)
+        self._load_cnn()
 
-        if prefer == "cnn" and self.cnn is not None:
+        if prefer == "cnn" and (self.cnn is not None or self.cnn_lite is not None):
             self.backend = "cnn"
         elif self.rf is not None:
             self.backend = "rf"
         elif self.svm is not None:
             self.backend = "svm"
-        elif self.cnn is not None:
+        elif self.cnn is not None or self.cnn_lite is not None:
             self.backend = "cnn"
         else:
             raise RuntimeError(
                 f"No trained model artifacts found in {MODEL_DIR}. "
                 "Run train_baseline.py and/or train_deep.py first."
             )
+
+    def _load_cnn(self):
+        """TFLite first (light footprint), full Keras model as a last resort."""
+        tflite_path = os.path.join(MODEL_DIR, "cnn_model.tflite")
+        if os.path.exists(tflite_path):
+            try:
+                from ai_edge_litert.interpreter import Interpreter
+            except ImportError:
+                try:
+                    from tensorflow.lite.python.interpreter import Interpreter
+                except ImportError:
+                    Interpreter = None
+            if Interpreter is not None:
+                interp = Interpreter(model_path=tflite_path)
+                interp.allocate_tensors()
+                self.cnn_lite = {
+                    "interpreter": interp,
+                    "input": interp.get_input_details()[0],
+                    "output": interp.get_output_details()[0],
+                }
+
+        if self.cnn_lite is None:
+            keras_path = os.path.join(MODEL_DIR, "cnn_model.keras")
+            if os.path.exists(keras_path):
+                import tensorflow as tf
+                self.cnn = tf.keras.models.load_model(keras_path)
 
     def is_ready(self) -> bool:
         return self.backend is not None
@@ -109,10 +143,16 @@ class EmotionPredictor:
         use = model or self.backend
 
         if use == "cnn":
-            if self.cnn is None:
+            if self.cnn is None and self.cnn_lite is None:
                 return {"error": "CNN model not available on this server."}
-            spec = extract_mel_spectrogram_image(y)[np.newaxis, ..., np.newaxis]
-            probs = self.cnn.predict(spec, verbose=0)[0]
+            spec = extract_mel_spectrogram_image(y)[np.newaxis, ..., np.newaxis].astype(np.float32)
+            if self.cnn_lite is not None:
+                interp = self.cnn_lite["interpreter"]
+                interp.set_tensor(self.cnn_lite["input"]["index"], spec)
+                interp.invoke()
+                probs = interp.get_tensor(self.cnn_lite["output"]["index"])[0]
+            else:
+                probs = self.cnn.predict(spec, verbose=0)[0]
             classes = EMOTIONS
         else:
             if self.scaler is None:
