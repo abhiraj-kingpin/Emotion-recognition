@@ -1,0 +1,9 @@
+# website/index.html is ~85% embedded base64 font data (inlined on purpose so
+# the page has zero external requests) -- excluding it from GitHub's language
+# stats so the bar reflects the actual Python/JS engineering, not asset bytes.
+# This also collapses it by default in PR diffs, which the base64 blob would
+# otherwise make unreadable anyway.
+website/index.html linguist-generated=true
+
+# Explicit even though linguist auto-detects this -- guarantees it either way.
+mobile/package-lock.json linguist-generated=true
