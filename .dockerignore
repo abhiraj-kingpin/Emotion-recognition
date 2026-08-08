@@ -1,0 +1,15 @@
+# Build context is the repo root (see render.yaml dockerContext) even though
+# only backend/ and ml/ actually get COPY'd into the image — excluding
+# everything else keeps the upload to the builder fast.
+.git/
+mobile/
+website/
+docs/
+data/raw/
+data/processed/
+__pycache__/
+**/__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/

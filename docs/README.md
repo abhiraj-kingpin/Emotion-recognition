@@ -212,9 +212,9 @@ or open `website/index.html` directly, or `cd mobile && npm install && npx expo 
 
 ## 7. Deployment
 
-- **Backend**: `backend/Dockerfile` + `backend/render.yaml` deploy to Render as a Docker web
+- **Backend**: `backend/Dockerfile` + root-level `render.yaml` deploy to Render as a Docker web
   service (Railway works the same way pointed at the same Dockerfile). `/health` is wired up as
-  the platform health-check path.
+  the platform health-check path. Full step-by-step in [docs/DEPLOYMENT.md](DEPLOYMENT.md).
 - **Model size**: `ml/quantize_model.py` exports a dynamic-range-quantized TFLite version of the
   CNN for free-tier hosts with limited RAM. Measured on this run: **1.40MB → 0.12MB (11.2x
   smaller)** for a **66.7% → 63.4%** test-accuracy trade-off (`docs/results/quantization_results.json`).
@@ -230,7 +230,7 @@ or open `website/index.html` directly, or `cd mobile && npm install && npx expo 
 No hosted deployment yet — this build was developed and evaluated locally end-to-end (see
 Results above for real measured numbers, not projections). To stand up a live demo:
 
-1. Deploy `backend/` to Render using `backend/render.yaml` (or any Docker host) and note the URL.
+1. Deploy `backend/` to Render using the root `render.yaml` (or any Docker host) and note the URL.
 2. Point `mobile/app.json`'s `extra.apiUrl` (or `EXPO_PUBLIC_API_URL`) and set the same URL for the
    website's "Start Dialogue" flow.
 3. Publish `website/index.html` to any static host (Netlify, Vercel, GitHub Pages, S3) — it has no

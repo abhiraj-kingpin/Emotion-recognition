@@ -1,7 +1,8 @@
 # Render.com Blueprint — https://render.com/docs/blueprint-spec
-# Deploy: push this repo to GitHub, then "New +" -> "Blueprint" on Render and
-# point it at the repo root (this file lives at backend/render.yaml, add
-# `-f backend/render.yaml` if Render doesn't auto-detect it in that path).
+# Lives at the repo root on purpose: Render's "New +" -> "Blueprint" flow
+# auto-detects render.yaml here with zero extra configuration. It builds
+# backend/Dockerfile with the full repo as build context (needed so it can
+# COPY ../ml alongside backend/ — see backend/Dockerfile).
 services:
   - type: web
     name: emotionsense-api

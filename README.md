@@ -77,5 +77,7 @@ external requests) — open it directly or deploy it to any static host.
 
 ## Deployment
 
-See [docs/README.md#7-deployment](docs/README.md#7-deployment) for Render/Docker instructions and
-the model-quantization trade-offs for free-tier hosting.
+Not deployed anywhere yet — this was built and evaluated locally. For the exact steps to push
+this to GitHub and deploy the backend (Render) + website (Vercel), see
+**[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**. For the model-quantization trade-offs and other
+deployment notes, see [docs/README.md#7-deployment](docs/README.md#7-deployment).
