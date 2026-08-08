@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "EmotionSense",
+    "slug": "emotionsense-ser",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B0D12",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0D12"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.emotionsense.ser",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "EmotionSense needs microphone access to record and analyze your speech."
+      }
+    },
+    "android": {
+      "package": "com.emotionsense.ser",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B0D12"
+      },
+      "permissions": ["RECORD_AUDIO"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow EmotionSense to access your microphone to record speech for emotion analysis."
+        }
+      ]
+    ],
+    "extra": {
+      "apiUrl": "http://localhost:8000"
+    }
+  }
+}

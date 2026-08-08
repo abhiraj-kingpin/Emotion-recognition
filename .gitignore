@@ -1,0 +1,32 @@
+# --- data (large, re-downloadable/regenerable, see docs/README.md) ---
+# ml/models/ (12MB trained artifacts) and docs/results/*.png are intentionally
+# committed -- they let the backend run and the write-up render without
+# anyone having to retrain first.
+data/raw/
+data/processed/
+
+# --- python ---
+__pycache__/
+**/__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# --- node / expo ---
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/*.jks
+mobile/*.p8
+mobile/*.p12
+mobile/*.key
+mobile/*.mobileprovision
+
+# --- misc ---
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.local

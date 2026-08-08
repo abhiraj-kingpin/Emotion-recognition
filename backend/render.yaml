@@ -1,0 +1,16 @@
+# Render.com Blueprint — https://render.com/docs/blueprint-spec
+# Deploy: push this repo to GitHub, then "New +" -> "Blueprint" on Render and
+# point it at the repo root (this file lives at backend/render.yaml, add
+# `-f backend/render.yaml` if Render doesn't auto-detect it in that path).
+services:
+  - type: web
+    name: emotionsense-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8000
+    autoDeploy: true

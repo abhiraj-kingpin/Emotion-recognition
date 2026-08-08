@@ -1,0 +1,6 @@
+{
+  "keras_size_mb": 1.4,
+  "tflite_size_mb": 0.12,
+  "size_reduction_factor": 11.22,
+  "tflite_test_accuracy": 0.6343
+}

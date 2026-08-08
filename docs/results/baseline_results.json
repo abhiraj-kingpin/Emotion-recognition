@@ -1,0 +1,24 @@
+{
+  "random_forest": {
+    "best_params": {
+      "max_depth": null,
+      "min_samples_split": 4,
+      "n_estimators": 200
+    },
+    "val_accuracy": 0.5833333333333334,
+    "val_f1_macro": 0.5761890941077459,
+    "test_accuracy": 0.5833333333333334,
+    "test_f1_macro": 0.5716022077587996
+  },
+  "svm": {
+    "best_params": {
+      "C": 1,
+      "gamma": "auto",
+      "kernel": "rbf"
+    },
+    "val_accuracy": 0.5740740740740741,
+    "val_f1_macro": 0.571774026175589,
+    "test_accuracy": 0.5833333333333334,
+    "test_f1_macro": 0.5639067548557005
+  }
+}
