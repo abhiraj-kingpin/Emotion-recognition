@@ -25,6 +25,7 @@ from contextlib import asynccontextmanager
 
 import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -124,7 +125,11 @@ async def predict(file: UploadFile = File(...), model: str = None):
         with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
             tmp.write(raw)
             tmp_path = tmp.name
-        result = predictor.predict_from_path(tmp_path, model=model)
+        # predict_from_path is blocking CPU work (librosa + TFLite/sklearn) - run it
+        # off the event loop thread. Without this, every prediction freezes the
+        # entire server (including /health) for its full duration, since FastAPI
+        # only auto-threadpools plain `def` endpoints, not `async def` ones.
+        result = await run_in_threadpool(predictor.predict_from_path, tmp_path, model=model)
     except Exception as e:
         logger.exception("Inference failed")
         raise HTTPException(status_code=422, detail=f"Could not process audio: {e}")
@@ -167,7 +172,7 @@ async def predict_live(ws: WebSocket):
 
             if len(buffer) >= window_samples:
                 window, buffer = buffer[:window_samples], buffer[window_samples:]
-                result = predictor.predict_from_array(window, sr=sr)
+                result = await run_in_threadpool(predictor.predict_from_array, window, sr=sr)
                 await ws.send_json(result)
     except WebSocketDisconnect:
         logger.info("predict-live client disconnected")

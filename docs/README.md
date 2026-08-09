@@ -161,6 +161,19 @@ health check ever sees the container as ready - measured locally, that moves the
 cost from a real user's first request (where it caused a 502) to server boot (where nobody's
 waiting on it): first real `/predict` after startup dropped from 40-64s to **0.28s**.
 
+**A third bug, this one architectural, not a cold-start cost**: `/predict` was declared `async def`
+but called the blocking, CPU-heavy `predictor.predict_from_path()` directly inside it. FastAPI
+only runs plain `def` endpoints in a thread pool automatically - an `async def` endpoint that does
+blocking work runs it straight on the event loop, freezing the *entire* server (every other
+request, including `/health`) for that call's full duration. On a single-worker free-tier
+instance, this plausibly explains why Render's own health checks flapped during real traffic: a
+slow prediction could make `/health` itself briefly unresponsive, which looks identical to a crash
+from Render's side. Fix: wrap the blocking call in `fastapi.concurrency.run_in_threadpool`
+(`backend/main.py`, both `/predict` and `/predict-live`). Verified with a concurrency test - fired
+one real `/predict` request and hammered `/health` five times while it was in flight: all five
+returned in 2-11ms, unaffected by the concurrent prediction (previously they'd have queued behind
+it).
+
 ### Where the models get confused
 
 Reading the confusion matrices (`confusion_matrix_{rf,svm,cnn}.png`) side by side, the same two
