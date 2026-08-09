@@ -73,7 +73,11 @@ See [mobile/README.md](mobile/README.md) for pointing the app at a deployed back
 ### 4. Website
 
 `website/index.html` is a single self-contained file (fonts inlined, no build step, no
-external requests) — open it directly or deploy it to any static host.
+external requests except the live API call below) — open it directly or deploy it to any static
+host. "Start Dialogue" opens a real upload-and-analyze dialog, in vanilla JS, that calls the
+deployed backend's `/predict` directly (cross-origin — see CORS in `backend/main.py`); the backend
+URL is a constant near the top of the page's `<script>` block, update it there if the backend
+moves.
 
 ## Deployment
 

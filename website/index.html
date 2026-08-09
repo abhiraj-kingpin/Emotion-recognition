@@ -1,3 +1,4 @@
+<meta charset="utf-8" />
 <title>EmotionSense — Speech Emotion Recognition</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
@@ -50,6 +51,7 @@
   --accent-soft: rgba(132, 120, 232, 0.16);
   --accent-2: #4cc9b0;
   --hairline: rgba(255, 255, 255, 0.08);
+  --danger: #e5484d;
 
   --font-display: 'Clash Display', 'Segoe UI', system-ui, sans-serif;
   --font-body: 'Satoshi', 'Segoe UI', system-ui, sans-serif;
@@ -493,6 +495,116 @@ footer {
   .stat-row { grid-template-columns: 1fr; }
   .stat { border-right: none !important; border-bottom: 1px solid var(--hairline); }
 }
+
+/* ---------------- start-dialogue modal ---------------- */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(4, 5, 8, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.dialog-overlay[hidden] { display: none; }
+
+.dialog-card {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--bg-raised);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 40px 32px 32px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+}
+
+.dialog-close {
+  position: absolute;
+  top: 18px; right: 18px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.dialog-close:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
+
+.dialog-heading { font-size: 26px; margin: 14px 0 10px; max-width: 18ch; }
+.dialog-sub { color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin-bottom: 26px; max-width: 42ch; }
+
+.upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  padding: 36px 20px;
+  border-radius: 18px;
+  border: 1.5px dashed var(--glass-border);
+  background: var(--glass);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: var(--accent-soft); }
+.upload-zone svg { color: var(--accent); margin-bottom: 6px; }
+.upload-zone strong { color: var(--text-primary); font-size: 15px; font-weight: 600; }
+.upload-zone span { color: var(--text-muted); font-size: 13px; }
+.upload-zone .upload-hint { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.03em; margin-top: 8px; }
+
+.dialog-file-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 16px; padding: 12px 16px; border-radius: 14px;
+  background: var(--glass); border: 1px solid var(--glass-border);
+}
+.dialog-file-row[hidden] { display: none; }
+#dialog-file-name { font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+#dialog-analyze-btn { flex-shrink: 0; padding: 11px 22px; font-size: 13.5px; }
+#dialog-analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.dialog-status { margin-top: 16px; font-size: 13px; color: var(--text-muted); text-align: center; line-height: 1.6; }
+.dialog-status[hidden] { display: none; }
+.dialog-status.is-error { color: var(--danger); }
+
+#dialog-result-view[hidden] { display: none; }
+.dialog-back {
+  background: none; border: none; color: var(--text-secondary);
+  font-size: 13px; font-family: var(--font-mono); cursor: pointer;
+  padding: 0; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 6px;
+}
+.dialog-back:hover { color: var(--text-primary); }
+
+.result-badge { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 30px; }
+.result-dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 14px currentColor; }
+.result-emotion { font-family: var(--font-display); font-weight: 600; font-size: 24px; text-transform: capitalize; }
+.result-confidence { font-family: var(--font-mono); font-size: 14px; color: var(--text-muted); }
+
+.result-bars { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+.result-bar-row { display: grid; grid-template-columns: 84px 1fr 44px; align-items: center; gap: 10px; }
+.result-bar-row .r-label { font-size: 12.5px; color: var(--text-secondary); text-transform: capitalize; }
+.result-bar-track { display: block; height: 8px; border-radius: 999px; background: var(--glass); overflow: hidden; }
+.result-bar-fill { display: block; height: 100%; border-radius: 999px; transition: width 0.5s cubic-bezier(.34,1.56,.64,1); }
+.result-bar-row .r-val { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+.result-meta {
+  display: flex; justify-content: center; gap: 18px; padding-top: 16px; margin-top: 4px;
+  border-top: 1px solid var(--hairline); font-family: var(--font-mono); font-size: 11px;
+  color: var(--text-muted); letter-spacing: 0.03em; text-transform: uppercase;
+}
+.dialog-again { width: 100%; margin-top: 24px; }
+
+@media (max-width: 560px) {
+  .dialog-card { padding: 32px 22px 26px; }
+  .dialog-heading { font-size: 22px; }
+}
 </style>
 
 <nav class="nav-shell">
@@ -504,7 +616,7 @@ footer {
       <li><a href="#support">Support</a></li>
       <li><a href="#case-studies">Case Studies</a></li>
     </ul>
-    <a href="#start-dialogue" class="nav-cta">Start Dialogue</a>
+    <a href="#start-dialogue" class="nav-cta" id="nav-start-dialogue">Start Dialogue</a>
   </div>
 </nav>
 
@@ -521,7 +633,7 @@ footer {
         vocal performances, served from a model that fits in your pocket.
       </p>
       <div class="hero-actions">
-        <a href="#start-dialogue" class="btn-pill">Start Dialogue</a>
+        <a href="#start-dialogue" class="btn-pill" id="hero-start-dialogue">Start Dialogue</a>
         <a href="#technology" class="btn-ghost">See the Model</a>
       </div>
     </div>
@@ -650,11 +762,12 @@ footer {
       <div class="support-card accent reveal" style="text-align:center; padding: 56px 32px; display:flex; flex-direction:column; align-items:center; gap:20px;">
         <h2 style="font-size: clamp(24px,3.4vw,34px); max-width: 20ch;">Give your product an ear for tone.</h2>
         <p style="color:var(--text-secondary); max-width: 50ch; font-size:15px;">
-          Clone the repository, drop in your own audio, and get a label with confidence scores
-          back in under a second — from your terminal, your app, or your browser.
+          Drop in your own audio right here and get a label with confidence scores back live —
+          or clone the repository and run it from your own terminal, app, or browser.
         </p>
         <div class="hero-actions" style="margin-top:4px;">
-          <a href="https://emotionsense-api-w5uh.onrender.com/docs" class="btn-pill" target="_blank" rel="noopener">Read the Docs</a>
+          <a href="#start-dialogue" class="btn-pill" id="section-start-dialogue">Try It Live</a>
+          <a href="https://emotionsense-api-w5uh.onrender.com/docs" class="btn-ghost" target="_blank" rel="noopener">Read the Docs</a>
           <a href="https://github.com/abhiraj-kingpin/Emotion-recognition" class="btn-ghost" target="_blank" rel="noopener">View on GitHub</a>
         </div>
       </div>
@@ -676,6 +789,53 @@ footer {
     <div class="footer-note">Speech Emotion Recognition · RAVDESS-trained · Built for research &amp; demonstration use.</div>
   </div>
 </footer>
+
+<div id="dialog-overlay" class="dialog-overlay" hidden>
+  <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+    <button class="dialog-close" id="dialog-close" aria-label="Close">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <div id="dialog-upload-view">
+      <span class="eyebrow">Speech Emotion Recognition</span>
+      <h2 id="dialog-title" class="dialog-heading">Hear what the words don't say</h2>
+      <p class="dialog-sub">
+        Drop in a short speech clip and get the detected emotion back from the model this
+        project actually trained and deployed — no signup, no sample data, real inference.
+      </p>
+
+      <label class="upload-zone" id="upload-zone" for="dialog-file-input">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4l-4 4M12 4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <strong>Drop an audio file here</strong>
+        <span>or click to browse</span>
+        <span class="upload-hint">WAV · MP3 · M4A · FLAC · OGG · WEBM — up to 15MB</span>
+        <input type="file" id="dialog-file-input" accept="audio/*" hidden />
+      </label>
+
+      <div id="dialog-file-row" class="dialog-file-row" hidden>
+        <span id="dialog-file-name"></span>
+        <button id="dialog-analyze-btn" class="btn-pill" disabled>Analyze emotion</button>
+      </div>
+
+      <p id="dialog-status" class="dialog-status" hidden></p>
+    </div>
+
+    <div id="dialog-result-view" hidden>
+      <button class="dialog-back" id="dialog-back-btn">&larr; Try another clip</button>
+      <div class="result-badge">
+        <span class="result-dot" id="result-dot"></span>
+        <span id="result-emotion" class="result-emotion"></span>
+        <span id="result-confidence" class="result-confidence"></span>
+      </div>
+      <div id="result-bars" class="result-bars"></div>
+      <div class="result-meta">
+        <span id="result-model"></span>
+        <span id="result-time"></span>
+      </div>
+      <button id="dialog-again-btn" class="btn-ghost dialog-again">Analyze another clip</button>
+    </div>
+  </div>
+</div>
 
 <script>
 (function () {
@@ -848,5 +1008,193 @@ footer {
   }
 
   try { initOrb(); } catch (e) { drawFallback(); }
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  // Cross-origin on purpose: the website (Vercel) and the backend (Render)
+  // are different domains. The backend's CORSMiddleware (backend/main.py)
+  // already allows this - see docs/DEPLOYMENT.md if that origin ever moves.
+  var API_BASE = 'https://emotionsense-api-w5uh.onrender.com';
+  var MAX_BYTES = 15 * 1024 * 1024;
+  var ALLOWED_EXT = ['.wav', '.mp3', '.m4a', '.flac', '.ogg', '.webm'];
+
+  // Mirrors ml/utils.py EMOTION_COLORS / mobile/src/constants/emotions.js -
+  // same eight colors everywhere this project shows an emotion.
+  var EMOTION_COLORS = {
+    angry: '#E5484D', calm: '#4CC9B0', disgust: '#8B7A3F', fearful: '#7C6FE0',
+    happy: '#F5C542', neutral: '#9AA5B1', sad: '#4A7FC9', surprised: '#E8823B'
+  };
+
+  var overlay = document.getElementById('dialog-overlay');
+  var closeBtn = document.getElementById('dialog-close');
+  var uploadZone = document.getElementById('upload-zone');
+  var fileInput = document.getElementById('dialog-file-input');
+  var fileRow = document.getElementById('dialog-file-row');
+  var fileNameEl = document.getElementById('dialog-file-name');
+  var analyzeBtn = document.getElementById('dialog-analyze-btn');
+  var statusEl = document.getElementById('dialog-status');
+  var uploadView = document.getElementById('dialog-upload-view');
+  var resultView = document.getElementById('dialog-result-view');
+  var backBtn = document.getElementById('dialog-back-btn');
+  var againBtn = document.getElementById('dialog-again-btn');
+
+  if (!overlay) return; // markup missing for some reason - fail quiet, not loud
+
+  var selectedFile = null;
+
+  function openDialog(e) {
+    if (e) e.preventDefault();
+    overlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDialog() {
+    overlay.hidden = true;
+    document.body.style.overflow = '';
+    resetToUpload();
+  }
+
+  function resetToUpload() {
+    selectedFile = null;
+    fileRow.hidden = true;
+    analyzeBtn.disabled = true;
+    analyzeBtn.textContent = 'Analyze emotion';
+    setStatus(null);
+    fileInput.value = '';
+    resultView.hidden = true;
+    uploadView.hidden = false;
+  }
+
+  function setStatus(msg, isError) {
+    if (!msg) { statusEl.hidden = true; return; }
+    statusEl.textContent = msg;
+    statusEl.hidden = false;
+    statusEl.classList.toggle('is-error', !!isError);
+  }
+
+  function extOf(name) {
+    var i = name.lastIndexOf('.');
+    return i >= 0 ? name.slice(i).toLowerCase() : '';
+  }
+
+  function selectFile(file) {
+    if (!file) return;
+    var ext = extOf(file.name || '');
+    if (ALLOWED_EXT.indexOf(ext) === -1) {
+      setStatus('Unsupported file type (' + (ext || 'unknown') + '). Try WAV, MP3, M4A, FLAC, OGG, or WEBM.', true);
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      setStatus('That file is too large (max 15MB).', true);
+      return;
+    }
+    selectedFile = file;
+    fileNameEl.textContent = file.name;
+    fileRow.hidden = false;
+    analyzeBtn.disabled = false;
+    setStatus(null);
+  }
+
+  ['dragover', 'dragenter'].forEach(function (evt) {
+    uploadZone.addEventListener(evt, function (e) {
+      e.preventDefault();
+      uploadZone.classList.add('drag-over');
+    });
+  });
+  ['dragleave', 'dragend'].forEach(function (evt) {
+    uploadZone.addEventListener(evt, function () {
+      uploadZone.classList.remove('drag-over');
+    });
+  });
+  uploadZone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    selectFile(file);
+  });
+  fileInput.addEventListener('change', function (e) {
+    selectFile(e.target.files && e.target.files[0]);
+  });
+
+  analyzeBtn.addEventListener('click', function () {
+    if (!selectedFile) return;
+    analyzeBtn.disabled = true;
+    analyzeBtn.textContent = 'Analyzing…';
+    setStatus('Analyzing — first request after a quiet period can take up to a minute while the free-tier server wakes up.');
+
+    var formData = new FormData();
+    formData.append('file', selectedFile);
+
+    fetch(API_BASE + '/predict', { method: 'POST', body: formData })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) {
+            throw new Error(data && data.detail ? data.detail : ('Request failed (' + res.status + ')'));
+          }
+          return data;
+        });
+      })
+      .then(showResult)
+      .catch(function (err) {
+        analyzeBtn.disabled = false;
+        analyzeBtn.textContent = 'Analyze emotion';
+        setStatus((err && err.message) || 'Something went wrong — try a different clip.', true);
+      });
+  });
+
+  function showResult(data) {
+    setStatus(null);
+    uploadView.hidden = true;
+    resultView.hidden = false;
+
+    var color = EMOTION_COLORS[data.emotion] || '#8478e8';
+    var dot = document.getElementById('result-dot');
+    var emo = document.getElementById('result-emotion');
+    dot.style.background = color;
+    dot.style.color = color;
+    emo.textContent = data.emotion;
+    emo.style.color = color;
+    document.getElementById('result-confidence').textContent = Math.round(data.confidence * 100) + '% confidence';
+
+    var barsEl = document.getElementById('result-bars');
+    barsEl.innerHTML = '';
+    var probs = data.probabilities || {};
+    var entries = Object.keys(probs).map(function (k) { return [k, probs[k]]; })
+      .sort(function (a, b) { return b[1] - a[1]; });
+
+    entries.forEach(function (pair) {
+      var name = pair[0], val = pair[1];
+      var pct = Math.round(val * 100);
+      var c = EMOTION_COLORS[name] || '#8478e8';
+      var row = document.createElement('div');
+      row.className = 'result-bar-row';
+      row.innerHTML =
+        '<span class="r-label">' + name + '</span>' +
+        '<span class="result-bar-track"><span class="result-bar-fill" style="width:' + pct + '%;background:' + c + '"></span></span>' +
+        '<span class="r-val">' + pct + '%</span>';
+      barsEl.appendChild(row);
+    });
+
+    document.getElementById('result-model').textContent = (data.model_used || 'cnn').toUpperCase();
+    document.getElementById('result-time').textContent = Math.round(data.duration_ms || 0) + 'ms';
+  }
+
+  ['nav-start-dialogue', 'hero-start-dialogue', 'section-start-dialogue'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', openDialog);
+  });
+  closeBtn.addEventListener('click', closeDialog);
+  backBtn.addEventListener('click', resetToUpload);
+  againBtn.addEventListener('click', resetToUpload);
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) closeDialog();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !overlay.hidden) closeDialog();
+  });
 })();
 </script>
