@@ -560,6 +560,74 @@ footer {
 .upload-zone span { color: var(--text-muted); font-size: 13px; }
 .upload-zone .upload-hint { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.03em; margin-top: 8px; }
 
+.dialog-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 18px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+}
+.dialog-tab {
+  flex: 1;
+  padding: 9px 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.dialog-tab:hover { color: var(--text-secondary); }
+.dialog-tab.active { background: var(--accent); color: #f8f7ff; }
+
+#record-panel[hidden], #upload-panel[hidden] { display: none; }
+
+.record-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 36px 20px;
+  border-radius: 18px;
+  border: 1.5px dashed var(--glass-border);
+  background: var(--glass);
+}
+
+.mic-button {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--accent), #6a5cd6);
+  color: #f8f7ff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 26px rgba(132,120,232,0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  flex-shrink: 0;
+}
+.mic-button:hover { transform: translateY(-2px); }
+.mic-button.recording {
+  background: linear-gradient(135deg, var(--danger), #b8383c);
+  box-shadow: 0 0 0 0 rgba(229,72,77,0.5);
+  animation: mic-pulse 1.6s ease-out infinite;
+}
+@keyframes mic-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(229,72,77,0.45); }
+  70% { box-shadow: 0 0 0 18px rgba(229,72,77,0); }
+  100% { box-shadow: 0 0 0 0 rgba(229,72,77,0); }
+}
+.record-status { color: var(--text-secondary); font-size: 13.5px; text-align: center; }
+.record-timer { font-family: var(--font-mono); font-size: 20px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mic-button.recording { animation: none; }
+}
+
 .dialog-file-row {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   margin-top: 16px; padding: 12px 16px; border-radius: 14px;
@@ -804,13 +872,30 @@ footer {
         project actually trained and deployed — no signup, no sample data, real inference.
       </p>
 
-      <label class="upload-zone" id="upload-zone" for="dialog-file-input">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4l-4 4M12 4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <strong>Drop an audio file here</strong>
-        <span>or click to browse</span>
-        <span class="upload-hint">WAV · MP3 · M4A · FLAC · OGG · WEBM — up to 15MB</span>
-        <input type="file" id="dialog-file-input" accept="audio/*" hidden />
-      </label>
+      <div class="dialog-tabs" role="tablist">
+        <button type="button" class="dialog-tab active" id="tab-upload" role="tab" aria-selected="true">Upload</button>
+        <button type="button" class="dialog-tab" id="tab-record" role="tab" aria-selected="false">Record</button>
+      </div>
+
+      <div id="upload-panel">
+        <label class="upload-zone" id="upload-zone" for="dialog-file-input">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4l-4 4M12 4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <strong>Drop an audio file here</strong>
+          <span>or click to browse</span>
+          <span class="upload-hint">WAV · MP3 · M4A · FLAC · OGG · WEBM — up to 15MB</span>
+          <input type="file" id="dialog-file-input" accept="audio/*" hidden />
+        </label>
+      </div>
+
+      <div id="record-panel" hidden>
+        <div class="record-zone">
+          <button type="button" class="mic-button" id="mic-button" aria-label="Start recording">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 003-3V6a3 3 0 00-6 0v6a3 3 0 003 3z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 11a7 7 0 01-14 0M12 18v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="record-status" id="record-status">Tap to start recording</div>
+          <div class="record-timer" id="record-timer" hidden>0:00</div>
+        </div>
+      </div>
 
       <div id="dialog-file-row" class="dialog-file-row" hidden>
         <span id="dialog-file-name"></span>
@@ -1041,10 +1126,24 @@ footer {
   var resultView = document.getElementById('dialog-result-view');
   var backBtn = document.getElementById('dialog-back-btn');
   var againBtn = document.getElementById('dialog-again-btn');
+  var tabUpload = document.getElementById('tab-upload');
+  var tabRecord = document.getElementById('tab-record');
+  var uploadPanel = document.getElementById('upload-panel');
+  var recordPanel = document.getElementById('record-panel');
+  var micButton = document.getElementById('mic-button');
+  var recordStatus = document.getElementById('record-status');
+  var recordTimer = document.getElementById('record-timer');
 
   if (!overlay) return; // markup missing for some reason - fail quiet, not loud
 
   var selectedFile = null;
+  var mediaRecorder = null;
+  var mediaStream = null;
+  var recordedChunks = [];
+  var recordStartTime = null;
+  var timerInterval = null;
+  var recordAutoStopTimeout = null;
+  var MAX_RECORD_MS = 15000;
 
   function openDialog(e) {
     if (e) e.preventDefault();
@@ -1067,7 +1166,26 @@ footer {
     fileInput.value = '';
     resultView.hidden = true;
     uploadView.hidden = false;
+    showUploadTab();
   }
+
+  function showUploadTab() {
+    tabUpload.classList.add('active'); tabUpload.setAttribute('aria-selected', 'true');
+    tabRecord.classList.remove('active'); tabRecord.setAttribute('aria-selected', 'false');
+    uploadPanel.hidden = false;
+    recordPanel.hidden = true;
+    stopRecordingStream();
+  }
+
+  function showRecordTab() {
+    tabRecord.classList.add('active'); tabRecord.setAttribute('aria-selected', 'true');
+    tabUpload.classList.remove('active'); tabUpload.setAttribute('aria-selected', 'false');
+    recordPanel.hidden = false;
+    uploadPanel.hidden = true;
+  }
+
+  tabUpload.addEventListener('click', showUploadTab);
+  tabRecord.addEventListener('click', showRecordTab);
 
   function setStatus(msg, isError) {
     if (!msg) { statusEl.hidden = true; return; }
@@ -1120,16 +1238,15 @@ footer {
     selectFile(e.target.files && e.target.files[0]);
   });
 
-  analyzeBtn.addEventListener('click', function () {
-    if (!selectedFile) return;
-    analyzeBtn.disabled = true;
-    analyzeBtn.textContent = 'Analyzing…';
+  // Shared by both the Upload tab's Analyze button and the Record tab's
+  // auto-analyze-on-stop - one fetch path, one error format, one result
+  // renderer, regardless of which tab produced the file.
+  function runAnalysis(file) {
     setStatus('Analyzing — first request after a quiet period can take up to a minute while the free-tier server wakes up.');
-
     var formData = new FormData();
-    formData.append('file', selectedFile);
+    formData.append('file', file);
 
-    fetch(API_BASE + '/predict', { method: 'POST', body: formData })
+    return fetch(API_BASE + '/predict', { method: 'POST', body: formData })
       .then(function (res) {
         return res.json().then(function (data) {
           if (!res.ok) {
@@ -1140,10 +1257,130 @@ footer {
       })
       .then(showResult)
       .catch(function (err) {
-        analyzeBtn.disabled = false;
-        analyzeBtn.textContent = 'Analyze emotion';
         setStatus((err && err.message) || 'Something went wrong — try a different clip.', true);
+        throw err;
       });
+  }
+
+  analyzeBtn.addEventListener('click', function () {
+    if (!selectedFile) return;
+    analyzeBtn.disabled = true;
+    analyzeBtn.textContent = 'Analyzing…';
+    runAnalysis(selectedFile).catch(function () {
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = 'Analyze emotion';
+    });
+  });
+
+  // ---------------- live recording ----------------
+  function pickMimeType() {
+    var candidates = ['audio/webm', 'audio/ogg', 'audio/mp4'];
+    for (var i = 0; i < candidates.length; i++) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(candidates[i])) {
+        return candidates[i];
+      }
+    }
+    return '';
+  }
+
+  function extForMime(mime) {
+    if (mime.indexOf('ogg') !== -1) return '.ogg';
+    if (mime.indexOf('mp4') !== -1) return '.m4a';
+    return '.webm';
+  }
+
+  function updateRecordTimer() {
+    var elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+    var m = Math.floor(elapsed / 60);
+    var s = elapsed % 60;
+    recordTimer.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function stopRecordingStream() {
+    clearInterval(timerInterval);
+    clearTimeout(recordAutoStopTimeout);
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      try { mediaRecorder.stop(); } catch (e) { /* already stopping */ }
+    }
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(function (t) { t.stop(); });
+      mediaStream = null;
+    }
+    if (micButton) {
+      micButton.classList.remove('recording');
+      micButton.disabled = false;
+    }
+    if (recordTimer) recordTimer.hidden = true;
+    if (recordStatus) recordStatus.textContent = 'Tap to start recording';
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop(); // onstop handler below does the rest
+    }
+  }
+
+  function startRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+      recordStatus.textContent = "Live recording isn't supported in this browser — try Upload instead.";
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      mediaStream = stream;
+      var mimeType = pickMimeType();
+      try {
+        mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType: mimeType }) : new MediaRecorder(stream);
+      } catch (e) {
+        recordStatus.textContent = 'Could not start recording on this browser — try Upload instead.';
+        stream.getTracks().forEach(function (t) { t.stop(); });
+        return;
+      }
+
+      recordedChunks = [];
+      mediaRecorder.addEventListener('dataavailable', function (e) {
+        if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+      });
+      mediaRecorder.addEventListener('stop', function () {
+        clearInterval(timerInterval);
+        clearTimeout(recordAutoStopTimeout);
+        if (mediaStream) {
+          mediaStream.getTracks().forEach(function (t) { t.stop(); });
+          mediaStream = null;
+        }
+
+        var blobType = mediaRecorder.mimeType || mimeType || 'audio/webm';
+        var blob = new Blob(recordedChunks, { type: blobType });
+        var file = new File([blob], 'recording' + extForMime(blobType), { type: blobType });
+
+        micButton.classList.remove('recording');
+        recordTimer.hidden = true;
+        micButton.disabled = true;
+
+        runAnalysis(file).catch(function () {
+          micButton.disabled = false;
+          recordStatus.textContent = 'Tap to start recording';
+        });
+      });
+
+      mediaRecorder.start();
+      recordStartTime = Date.now();
+      micButton.classList.add('recording');
+      recordStatus.textContent = 'Recording — tap to stop';
+      recordTimer.hidden = false;
+      recordTimer.textContent = '0:00';
+      timerInterval = setInterval(updateRecordTimer, 250);
+      recordAutoStopTimeout = setTimeout(stopRecording, MAX_RECORD_MS);
+    }).catch(function () {
+      recordStatus.textContent = 'Microphone access was blocked — allow it in your browser to record.';
+    });
+  }
+
+  micButton.addEventListener('click', function () {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      stopRecording();
+    } else {
+      startRecording();
+    }
   });
 
   function showResult(data) {
