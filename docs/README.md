@@ -148,6 +148,19 @@ load at startup ~6.4s. (An earlier version served the full Keras model directly:
 but ~57s startup and a memory footprint that OOM-crashed on Render's 512MB free tier the moment a
 real request ran — see below for why that changed.)
 
+**A second, separate cold-start trap, found the same way (against the live deployment, not just
+in theory)**: even after the memory fix, the *first* real inference call after a fresh process
+start took ~40-64s — comfortably over Render's request timeout, so it 502'd every time despite
+`/health` responding instantly. Root cause: librosa's audio-processing internals are numba-JIT-
+compiled on first use, a one-time cost that's easy to miss locally (a fast dev machine hides it;
+~40s there became a timeout-triggering 50-64s on Render's slower/throttled free CPU) and that
+recurs on every free-tier idle-spindown-then-wake cycle, since the JIT cache doesn't survive a
+process restart. Fix: `EmotionPredictor.warm_up()` runs one throwaway inference through every
+loaded backend during the FastAPI startup `lifespan` handler (`backend/main.py`), before Render's
+health check ever sees the container as ready - measured locally, that moves the ~29s one-time
+cost from a real user's first request (where it caused a 502) to server boot (where nobody's
+waiting on it): first real `/predict` after startup dropped from 40-64s to **0.28s**.
+
 ### Where the models get confused
 
 Reading the confusion matrices (`confusion_matrix_{rf,svm,cnn}.png`) side by side, the same two

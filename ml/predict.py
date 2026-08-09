@@ -75,6 +75,30 @@ class EmotionPredictor:
                 "Run train_baseline.py and/or train_deep.py first."
             )
 
+    def warm_up(self):
+        """
+        Run one throwaway inference through every loaded backend so the
+        one-time costs (numba JIT-compiling librosa's internals, XNNPACK
+        delegate lazy init, etc.) are paid now, not on a real user's first
+        request. This matters: locally this "first call" alone measured
+        ~40s even on a fast dev machine (vs. ~30ms for every call after);
+        on a slow/throttled free-tier host that easily exceeds the
+        platform's request timeout, which looks identical to a crash from
+        the outside (502) but is really just an unpaid warm-up cost. Call
+        this once at process startup, not per-request.
+        """
+        import time
+
+        dummy = (0.05 * np.random.default_rng(0).standard_normal(int(3.5 * 22050))).astype(np.float32)
+        t0 = time.time()
+        if self.cnn is not None or self.cnn_lite is not None:
+            self._predict(dummy, model="cnn")
+        if self.rf is not None:
+            self._predict(dummy, model="rf")
+        if self.svm is not None:
+            self._predict(dummy, model="svm")
+        return time.time() - t0
+
     def _load_cnn(self):
         """TFLite first (light footprint), full Keras model as a last resort."""
         tflite_path = os.path.join(MODEL_DIR, "cnn_model.tflite")

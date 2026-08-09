@@ -48,6 +48,10 @@ async def lifespan(app: FastAPI):
     try:
         predictor = get_predictor(prefer="cnn")
         logger.info(f"Model backend '{predictor.backend}' ready in {time.time()-t0:.2f}s")
+        # Pay the one-time JIT/lazy-init cost now, not on a real request's dime -
+        # see EmotionPredictor.warm_up()'s docstring for why this matters.
+        warm_s = predictor.warm_up()
+        logger.info(f"Warm-up inference done in {warm_s:.2f}s - ready for real traffic")
     except Exception as e:
         # Server still starts so /health can report the problem instead of crash-looping.
         logger.error(f"Model failed to load at startup: {e}")
