@@ -25,7 +25,11 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0B0D12"
       },
-      "permissions": ["RECORD_AUDIO"]
+      "permissions": [
+        "RECORD_AUDIO",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,7 +43,10 @@
       ]
     ],
     "extra": {
-      "apiUrl": "https://emotionsense-api-w5uh.onrender.com"
+      "apiUrl": "https://emotionsense-api-w5uh.onrender.com",
+      "eas": {
+        "projectId": "ecfd6aa5-8b8a-41ed-9421-3804f1303f3a"
+      }
     }
   }
 }

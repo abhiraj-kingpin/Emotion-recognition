@@ -1,18 +1,16 @@
 # EmotionSense — Speech Emotion Recognition
 
-## 1. Problem statement
+## 1. Why I built this
 
-Words carry content; voice carries feeling. Two people can say "I'm fine" and mean opposite
-things, and a support agent, a game character, or a wellness app that only reads the transcript
-misses that entirely. Speech Emotion Recognition (SER) predicts the emotional state behind an
-utterance from the acoustic signal itself — pitch, energy, rhythm, timbre — independent of what
-was actually said.
+Two people can say "I'm fine" and mean completely opposite things. The words are identical; the
+voice underneath them isn't. Anything that only reads a transcript — a support-ticket system, a
+game character, a journaling app — misses that entirely. Speech Emotion Recognition tries to
+predict the emotion behind an utterance from the sound itself: pitch, energy, rhythm, timbre —
+not what was said, but how.
 
-It matters wherever a system reacts to *how* something is said, not just what: call-center QA
-that flags rising frustration before it becomes a complaint, voice journaling apps that track
-emotional trend lines a person can't self-report accurately, accessibility tools for users who
-communicate primarily through tone, and game/assistant characters that respond to delivery
-instead of only keywords.
+That's the piece I wanted to actually build, not just read about: take raw audio in, get a
+believable emotion label out, and be honest in the write-up below about where it works and where
+it doesn't.
 
 ## 2. Dataset & preprocessing
 
