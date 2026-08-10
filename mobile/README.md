@@ -25,14 +25,34 @@ Scan the QR code with **Expo Go** (Android) or the Camera app (iOS), or press `a
 
 ## Pointing at the backend
 
-By default the app calls `http://localhost:8000` (see `src/services/api.js`). To point at a
-deployed backend, either:
+`app.json`'s `extra.apiUrl` already points at the deployed Render backend (see `src/services/api.js`
+for how it's read). To point at a different backend instead, either:
 
-- set `extra.apiUrl` in `app.json`, or
+- edit `extra.apiUrl` in `app.json`, or
 - run with `EXPO_PUBLIC_API_URL=https://your-api.onrender.com npx expo start`
 
-When testing on a physical device against a backend running on your laptop, `localhost` won't
-resolve to your machine — use your LAN IP (`http://192.168.x.x:8000`) instead.
+If you ever point this at a backend running on your own laptop instead of a deployed one:
+`localhost` won't resolve from a physical device — use your laptop's LAN IP
+(`http://192.168.x.x:8000`) instead.
+
+## Building a standalone APK (no dev server needed)
+
+Expo Go is a dev-mode viewer only — it has to match this project's exact SDK version, and it needs
+a running dev server. For something installable that works standalone, build a real APK via
+[EAS Build](https://docs.expo.dev/build/introduction/) (Expo's cloud build service — no Android
+Studio needed):
+
+```bash
+cd mobile
+npx eas login          # needs a free Expo account (expo.dev) - browser login
+npx eas build:configure  # links this project to your Expo account, first time only
+npx eas build --platform android --profile preview
+```
+
+That queues a cloud build and gives you a download link when it's done (a few minutes) — the
+`preview` profile in `eas.json` is set to build a directly-installable `.apk` (not the Play-Store-only
+`.aab` format `production` uses). Download the link on your phone and install it directly (you'll
+need to allow "install from unknown sources" once).
 
 ## Notes
 
@@ -40,5 +60,6 @@ resolve to your machine — use your LAN IP (`http://192.168.x.x:8000`) instead.
   the live dBFS reading, not a canned animation.
 - History is stored locally via `@react-native-async-storage/async-storage` — nothing is
   uploaded except the audio clip sent to `/predict` for inference.
-- `react-navigation` is pinned to v6 (not v7) because Expo SDK 51's blessed `react-native-screens`
-  version doesn't satisfy v7's peer dependency yet.
+- `App.js` wraps everything in `GestureHandlerRootView` — required for touches to register
+  reliably with `react-native-screens`' native-stack navigator. Easy to forget, and the failure
+  mode if you do (buttons silently not responding) doesn't point at the cause at all.
