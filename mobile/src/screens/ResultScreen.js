@@ -8,10 +8,12 @@ import Orb from '../components/Orb';
 import EmotionBreakdownChart from '../components/EmotionBreakdownChart';
 import { colors, radius, spacing, typography } from '../theme';
 import { emotionColor, emotionLabel } from '../constants/emotions';
+import { getAdvice } from '../constants/emotionAdvice';
 
 export default function ResultScreen({ route, navigation }) {
   const { record } = route.params;
   const color = emotionColor(record.emotion);
+  const advice = getAdvice(record.emotion);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -48,6 +50,25 @@ export default function ResultScreen({ route, navigation }) {
           <Text style={styles.breakdownTitle}>Emotion Breakdown</Text>
           <EmotionBreakdownChart probabilities={record.probabilities || {}} />
         </Card>
+
+        {advice && (
+          <Card style={[styles.breakdownCard, styles.adviceCard, { borderColor: `${color}33` }]}>
+            <View style={styles.adviceHeader}>
+              <View style={[styles.adviceDot, { backgroundColor: color }]} />
+              <Text style={styles.adviceHeadline}>{advice.headline}</Text>
+            </View>
+            {advice.tips.map((tip, i) => (
+              <View key={i} style={styles.tipRow}>
+                <Text style={[styles.tipBullet, { color }]}>•</Text>
+                <Text style={styles.tipText}>{tip}</Text>
+              </View>
+            ))}
+            <Text style={styles.adviceDisclaimer}>
+              A supportive nudge, not medical or mental-health advice — if something's weighing on
+              you for a while, a real conversation with someone beats an app every time.
+            </Text>
+          </Card>
+        )}
 
         <View style={styles.actionsRow}>
           <TouchableOpacity
@@ -88,6 +109,14 @@ const styles = StyleSheet.create({
   metaText: { color: colors.textMuted, fontSize: 12 },
   breakdownCard: { width: '100%', gap: spacing.sm },
   breakdownTitle: { color: colors.textPrimary, fontWeight: '600', fontSize: 15, marginBottom: 4 },
+  adviceCard: { borderWidth: 1, marginTop: spacing.sm },
+  adviceHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  adviceDot: { width: 8, height: 8, borderRadius: 4 },
+  adviceHeadline: { color: colors.textPrimary, fontWeight: '700', fontSize: 15, flexShrink: 1 },
+  tipRow: { flexDirection: 'row', gap: 8, paddingRight: 4 },
+  tipBullet: { fontSize: 15, fontWeight: '700', lineHeight: 20 },
+  tipText: { color: colors.textSecondary, fontSize: 13.5, lineHeight: 20, flex: 1 },
+  adviceDisclaimer: { color: colors.textMuted, fontSize: 11, lineHeight: 16, marginTop: 4, fontStyle: 'italic' },
   actionsRow: { flexDirection: 'row', gap: spacing.md, width: '100%', marginTop: spacing.lg },
   actionBtn: {
     flex: 1,

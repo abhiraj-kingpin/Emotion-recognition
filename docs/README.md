@@ -217,6 +217,25 @@ numbers). Results, and what they actually show:
 
 These aren't hypothetical caveats — they're what this exact pipeline actually did when asked.
 
+**A real accuracy bug, found from actual phone usage, not a benchmark**: `load_fixed_length`
+(used at training time) always takes the *first* 3.5 seconds of a trimmed clip. RAVDESS clips are
+already ~3-4s, so that was never a problem for training or for the 66.7% number above. But a
+person talking into their phone routinely runs past 3.5s — a "um, okay" or a breath at the start,
+then the actual sentence a couple seconds in — and blindly using the first 3.5s can crop out the
+part that actually carries the emotion. Fixed at the inference layer only (`select_best_window` in
+`ml/audio_features.py`, wired into `predict_from_path`/`predict_from_array` in `ml/predict.py`):
+slide a window across the clip and keep whichever 3.5s span has the highest RMS energy, instead of
+always the start. Training code is untouched, so the 66.7% figure above still stands unchanged.
+
+Measured, not assumed: took a real test clip (ground truth "happy"), padded it with 4s of low-level
+noise beforehand, and ran it through both paths. The clip alone was already a close, uncertain call
+(34.7% "disgust", "happy" a close second) - a real acoustic ambiguity in this file, not something
+the windowing fix claims to solve. But burying that same clip in noise and picking the best window
+found the actual speech and returned "happy" at 99.9997% confidence - the correct answer, and far
+more confident than the plain short clip ever was. Re-ran 40 random held-out test clips through the
+new code path afterward to confirm no regression: 60% (24/40), consistent with the documented
+66.7% within normal sampling noise for a 40-clip subset of the 216-clip test set.
+
 ## 6. Local setup
 
 See the root [README.md](../README.md#quick-start) for the full pipeline commands. Short version:

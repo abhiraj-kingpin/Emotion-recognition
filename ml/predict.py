@@ -23,7 +23,11 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
-from audio_features import extract_classical_features, extract_mel_spectrogram_image, load_fixed_length
+from audio_features import (
+    extract_classical_features,
+    extract_mel_spectrogram_image,
+    select_best_window,
+)
 from utils import EMOTIONS
 
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "models")
@@ -139,12 +143,18 @@ class EmotionPredictor:
         return True, None
 
     def predict_from_path(self, path: str, model: str = None) -> dict:
-        y = load_fixed_length(path)
         import librosa
+
         y_full, sr = librosa.load(path, sr=None, mono=True)
         ok, msg = self._validate(y_full, sr)
         if not ok:
             return {"error": msg}
+        # Real recordings routinely run longer than the model's 3.5s training window -
+        # pick the most vocally-active window instead of blindly using the start (see
+        # select_best_window's docstring). Short clips are unaffected either way.
+        y_at_sr, _ = librosa.load(path, sr=22050, mono=True)
+        y_trimmed, _ = librosa.effects.trim(y_at_sr, top_db=25)
+        y = select_best_window(y_trimmed)
         return self._predict(y, model=model)
 
     def predict_from_array(self, y_raw: np.ndarray, sr: int, model: str = None) -> dict:
@@ -155,13 +165,9 @@ class EmotionPredictor:
             return {"error": msg}
         if sr != 22050:
             y_raw = librosa.resample(y_raw, orig_sr=sr, target_sr=22050)
-        target_len = int(3.5 * 22050)
         y_raw, _ = librosa.effects.trim(y_raw, top_db=25)
-        if len(y_raw) < target_len:
-            y_raw = np.pad(y_raw, (0, target_len - len(y_raw)))
-        else:
-            y_raw = y_raw[:target_len]
-        return self._predict(y_raw.astype(np.float32), model=model)
+        y = select_best_window(y_raw.astype(np.float32))
+        return self._predict(y, model=model)
 
     def _predict(self, y: np.ndarray, model: str = None) -> dict:
         use = model or self.backend

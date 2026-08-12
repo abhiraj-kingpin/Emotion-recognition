@@ -15,7 +15,15 @@ SPEC_FRAMES = int(np.ceil(CLIP_SECONDS * SR / HOP_LENGTH))  # fixed width for CN
 
 
 def load_fixed_length(path: str, sr: int = SR, seconds: float = CLIP_SECONDS) -> np.ndarray:
-    """Load audio, trim leading/trailing silence, pad or truncate to a fixed length."""
+    """
+    Load audio, trim leading/trailing silence, pad or truncate to a fixed length.
+
+    Used for training (data_prep/feature_extraction/train_deep) - RAVDESS clips are
+    already ~3-4s, so "take the first `seconds`" and "take the whole clip" are almost
+    always the same thing here. Left untouched so the trained model stays valid without
+    retraining. Real inference on longer, unscripted recordings should use
+    `select_best_window` instead - see its docstring for why.
+    """
     y, _ = librosa.load(path, sr=sr, mono=True)
     y, _ = librosa.effects.trim(y, top_db=25)
     target_len = int(seconds * sr)
@@ -24,6 +32,36 @@ def load_fixed_length(path: str, sr: int = SR, seconds: float = CLIP_SECONDS) ->
     else:
         y = y[:target_len]
     return y
+
+
+def select_best_window(y: np.ndarray, sr: int = SR, seconds: float = CLIP_SECONDS) -> np.ndarray:
+    """
+    Pick the most vocally-active `seconds`-long window from a (possibly longer) clip,
+    instead of blindly taking the start.
+
+    This is an inference-only fix, not a training-time one: RAVDESS clips are short
+    enough that "first N seconds" and "the clip" are basically the same thing, which is
+    why the trained model's accuracy is unaffected by this. But a real person recording
+    on their phone routinely runs past 3.5s - a throat-clear or "um, okay" at the start,
+    then the actual expressive sentence a couple seconds in - and truncating to the
+    first 3.5s can crop out the part that actually carries the emotion. Sliding a window
+    across the clip and keeping the one with the highest RMS energy is a cheap, effective
+    proxy for "the part where they're actually talking with energy" without needing any
+    retraining.
+    """
+    target_len = int(seconds * sr)
+    if len(y) <= target_len:
+        return np.pad(y, (0, target_len - len(y))) if len(y) < target_len else y
+
+    hop = max(int(0.5 * sr), 1)  # slide in 0.5s steps
+    best_start, best_energy = 0, -1.0
+    for start in range(0, len(y) - target_len + 1, hop):
+        window = y[start:start + target_len]
+        energy = float(np.sqrt(np.mean(window ** 2)))
+        if energy > best_energy:
+            best_energy = energy
+            best_start = start
+    return y[best_start:best_start + target_len]
 
 
 def augment_audio(y: np.ndarray, sr: int = SR, rng: np.random.Generator = None) -> np.ndarray:
